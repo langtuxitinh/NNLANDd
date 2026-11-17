@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib xmlns="http://java.sun.com/xml/ns/javaee" version="2.1">
+ <tlib-version>1.0</tlib-version><short-name>nn</short-name><uri>https://nnland.local/functions</uri>
+ <function><name>money</name><function-class>com.javaweb.nnland.utils.ViewFormat</function-class><function-signature>java.lang.String money(java.lang.Object)</function-signature></function>
+ <function><name>shortMoney</name><function-class>com.javaweb.nnland.utils.ViewFormat</function-class><function-signature>java.lang.String shortMoney(java.lang.Object)</function-signature></function>
+ <function><name>date</name><function-class>com.javaweb.nnland.utils.ViewFormat</function-class><function-signature>java.lang.String date(java.lang.Object)</function-signature></function>
+ <function><name>datetime</name><function-class>com.javaweb.nnland.utils.ViewFormat</function-class><function-signature>java.lang.String datetime(java.lang.Object)</function-signature></function>
+ <function><name>label</name><function-class>com.javaweb.nnland.utils.ViewFormat</function-class><function-signature>java.lang.String label(java.lang.String)</function-signature></function>
+</taglib>

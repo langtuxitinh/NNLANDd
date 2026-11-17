@@ -1,0 +1,9 @@
+/target
+/.idea
+
+# NNland local/private/runtime
+/application-local.properties
+/src/main/resources/application-local.properties
+/uploads/*
+!/uploads/.gitkeep
+*.log

@@ -1,0 +1,25 @@
+# Copy this file to application-local.properties next to pom.xml.
+# Enter your own local MySQL password. Do not put real secrets in public source control.
+spring.datasource.url=jdbc:mysql://localhost:3306/nnland?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&useSSL=false
+spring.datasource.username=root
+spring.datasource.password=DIEN_MAT_KHAU_MYSQL_CUA_BAN
+server.port=8081
+nnland.base-url=http://localhost:8081
+
+# Email: leave false until SMTP is configured.
+nnland.mail.enabled=false
+# spring.mail.host=smtp.example.com
+# spring.mail.port=587
+# spring.mail.username=YOUR_SMTP_USERNAME
+# spring.mail.password=YOUR_SMTP_PASSWORD_OR_APP_PASSWORD
+# nnland.mail.from=YOUR_VERIFIED_SENDER_ADDRESS
+# spring.mail.properties.mail.smtp.auth=true
+# spring.mail.properties.mail.smtp.starttls.enable=true
+
+# After initial setup you may disable creation of example inventory/accounts.
+# Existing records are never deleted by these switches.
+nnland.seed-data=true
+nnland.demo-accounts=true
+
+# For a clean installation without demo accounts, set demo-accounts=false and
+# configure NNLAND_ADMIN_EMAIL and NNLAND_ADMIN_PASSWORD as environment variables.

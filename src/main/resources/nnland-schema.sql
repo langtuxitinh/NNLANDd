@@ -1,0 +1,164 @@
+CREATE TABLE IF NOT EXISTS nn_accounts (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(190) NOT NULL UNIQUE,
+ username VARCHAR(60) NOT NULL UNIQUE, full_name VARCHAR(150) NOT NULL,
+ birth_year INT, phone VARCHAR(25) NOT NULL, gender VARCHAR(20) NOT NULL DEFAULT 'OTHER',
+ password_hash VARCHAR(100) NOT NULL, role VARCHAR(20) NOT NULL DEFAULT 'USER',
+ active BOOLEAN NOT NULL DEFAULT TRUE, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_buildings (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(32) NOT NULL UNIQUE, name VARCHAR(150) NOT NULL,
+ city VARCHAR(80) NOT NULL, district VARCHAR(80) NOT NULL, address VARCHAR(255) NOT NULL,
+ description TEXT, image VARCHAR(255) NOT NULL, amenities TEXT, published BOOLEAN NOT NULL DEFAULT TRUE,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_building_staff (
+ building_id BIGINT NOT NULL, account_id BIGINT NOT NULL, PRIMARY KEY(building_id,account_id),
+ FOREIGN KEY(building_id) REFERENCES nn_buildings(id), FOREIGN KEY(account_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_units (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, building_id BIGINT NOT NULL, code VARCHAR(32) NOT NULL,
+ name VARCHAR(180) NOT NULL, type VARCHAR(30) NOT NULL, bedrooms INT NOT NULL, bathrooms INT NOT NULL,
+ area DECIMAL(9,2) NOT NULL, floor_no INT NOT NULL, monthly_rent BIGINT NOT NULL,
+ deposit_amount BIGINT NOT NULL DEFAULT 0, service_fee BIGINT NOT NULL DEFAULT 0,
+ electricity_rate BIGINT NOT NULL DEFAULT 3500, water_rate BIGINT NOT NULL DEFAULT 18000,
+ parking_fee BIGINT NOT NULL DEFAULT 0, description TEXT, amenities TEXT,
+ image VARCHAR(255) NOT NULL, image2 VARCHAR(255), image3 VARCHAR(255),
+ published BOOLEAN NOT NULL DEFAULT TRUE, featured BOOLEAN NOT NULL DEFAULT FALSE,
+ operational_status VARCHAR(25) NOT NULL DEFAULT 'READY',
+ electricity_meter DECIMAL(15,3) NOT NULL DEFAULT 0, water_meter DECIMAL(15,3) NOT NULL DEFAULT 0,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(building_id,code), FOREIGN KEY(building_id) REFERENCES nn_buildings(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_leases (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE,
+ account_id BIGINT NOT NULL, unit_id BIGINT NOT NULL, initial_booking_id BIGINT NOT NULL UNIQUE,
+ start_date DATE NOT NULL, end_date DATE NOT NULL, original_end_date DATE NOT NULL,
+ monthly_rent BIGINT NOT NULL, deposit_held BIGINT NOT NULL DEFAULT 0,
+ electricity_rate BIGINT NOT NULL, water_rate BIGINT NOT NULL, service_fee BIGINT NOT NULL DEFAULT 0,
+ parking_fee BIGINT NOT NULL DEFAULT 0, status VARCHAR(25) NOT NULL DEFAULT 'RESERVED',
+ signed_at DATETIME NULL, checked_in_at DATETIME NULL, checked_out_at DATETIME NULL, checkout_date DATE NULL,
+ electricity_start DECIMAL(15,3) NOT NULL DEFAULT 0, water_start DECIMAL(15,3) NOT NULL DEFAULT 0,
+ terms_text TEXT NOT NULL, customer_name VARCHAR(150), customer_email VARCHAR(190), customer_phone VARCHAR(25), unit_label VARCHAR(180), building_label VARCHAR(150), property_address VARCHAR(255), deposit_deduction BIGINT NOT NULL DEFAULT 0, checkout_note TEXT,
+ reminder_sent_at DATETIME NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(unit_id) REFERENCES nn_units(id),
+ INDEX nn_lease_schedule(unit_id,status,start_date,end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_bookings (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE,
+ account_id BIGINT NOT NULL, unit_id BIGINT NOT NULL, lease_id BIGINT NULL,
+ kind VARCHAR(20) NOT NULL, start_date DATE NOT NULL, end_date DATE NOT NULL, months INT NOT NULL,
+ monthly_rent BIGINT NOT NULL, rent_total BIGINT NOT NULL, deposit_total BIGINT NOT NULL DEFAULT 0,
+ electricity_rate BIGINT NOT NULL, water_rate BIGINT NOT NULL, service_fee BIGINT NOT NULL DEFAULT 0,
+ parking_fee BIGINT NOT NULL DEFAULT 0,
+ status VARCHAR(25) NOT NULL DEFAULT 'HOLD', hold_until DATETIME NOT NULL,
+ terms_version VARCHAR(40) NOT NULL, terms_text TEXT NOT NULL, accepted_at DATETIME NOT NULL,
+ confirmed_at DATETIME NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(unit_id) REFERENCES nn_units(id),
+ FOREIGN KEY(lease_id) REFERENCES nn_leases(id), INDEX nn_booking_schedule(unit_id,status,start_date,end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_invoices (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE,
+ lease_id BIGINT NOT NULL, account_id BIGINT NOT NULL, unit_id BIGINT NOT NULL,
+ period VARCHAR(20) NOT NULL, reading_date DATE NOT NULL, due_date DATE NOT NULL,
+ electricity_start DECIMAL(15,3) NOT NULL, electricity_end DECIMAL(15,3) NOT NULL,
+ water_start DECIMAL(15,3) NOT NULL, water_end DECIMAL(15,3) NOT NULL,
+ electricity_rate BIGINT NOT NULL, water_rate BIGINT NOT NULL,
+ electricity_amount BIGINT NOT NULL, water_amount BIGINT NOT NULL,
+ service_fee BIGINT NOT NULL, parking_fee BIGINT NOT NULL, adjustment BIGINT NOT NULL DEFAULT 0,
+ note TEXT, total BIGINT NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
+ created_by BIGINT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(lease_id,period), FOREIGN KEY(lease_id) REFERENCES nn_leases(id),
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(unit_id) REFERENCES nn_units(id),
+ FOREIGN KEY(created_by) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_payments (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE,
+ account_id BIGINT NOT NULL, booking_id BIGINT NULL UNIQUE, invoice_id BIGINT NULL UNIQUE,
+ type VARCHAR(20) NOT NULL, due_amount BIGINT NOT NULL, status VARCHAR(25) NOT NULL DEFAULT 'PENDING',
+ claimed_at DATETIME NULL, customer_note VARCHAR(1000), created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(booking_id) REFERENCES nn_bookings(id),
+ FOREIGN KEY(invoice_id) REFERENCES nn_invoices(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_receipts (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE, payment_id BIGINT NOT NULL,
+ amount BIGINT NOT NULL, bank_reference VARCHAR(100) NOT NULL UNIQUE,
+ received_at DATETIME NOT NULL, confirmed_by BIGINT NOT NULL, note VARCHAR(1000),
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(payment_id) REFERENCES nn_payments(id), FOREIGN KEY(confirmed_by) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_bank_references (
+ bank_reference VARCHAR(100) PRIMARY KEY, event_type VARCHAR(20) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_refunds (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, payment_id BIGINT NOT NULL, amount BIGINT NOT NULL,
+ category VARCHAR(20) NOT NULL, reason VARCHAR(1000) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+ bank_reference VARCHAR(100) NULL UNIQUE, created_by BIGINT NOT NULL, processed_by BIGINT NULL,
+ processed_at DATETIME NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(payment_id) REFERENCES nn_payments(id), FOREIGN KEY(created_by) REFERENCES nn_accounts(id),
+ FOREIGN KEY(processed_by) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_tickets (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, code VARCHAR(40) NOT NULL UNIQUE,
+ account_id BIGINT NOT NULL, lease_id BIGINT NOT NULL, unit_id BIGINT NOT NULL,
+ category VARCHAR(30) NOT NULL, subject VARCHAR(180) NOT NULL, description TEXT NOT NULL,
+ priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL', status VARCHAR(25) NOT NULL DEFAULT 'OPEN',
+ assignee_id BIGINT NULL, assigned_to VARCHAR(150), manager_note TEXT, resolved_at DATETIME NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(lease_id) REFERENCES nn_leases(id),
+ FOREIGN KEY(unit_id) REFERENCES nn_units(id), FOREIGN KEY(assignee_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_contacts (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, account_id BIGINT NULL, unit_id BIGINT NULL,
+ full_name VARCHAR(150) NOT NULL, email VARCHAR(190) NOT NULL, phone VARCHAR(25) NOT NULL,
+ preferred_date DATE NULL, preferred_time VARCHAR(40), message TEXT NOT NULL,
+ status VARCHAR(25) NOT NULL DEFAULT 'NEW', manager_note TEXT, handled_by BIGINT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(unit_id) REFERENCES nn_units(id),
+ FOREIGN KEY(handled_by) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_lease_requests (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, account_id BIGINT NOT NULL,
+ lease_id BIGINT NULL, booking_id BIGINT NULL, type VARCHAR(20) NOT NULL,
+ requested_date DATE NULL, note TEXT NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+ manager_note TEXT, handled_by BIGINT NULL, handled_at DATETIME NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(lease_id) REFERENCES nn_leases(id),
+ FOREIGN KEY(booking_id) REFERENCES nn_bookings(id), FOREIGN KEY(handled_by) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_notifications (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, account_id BIGINT NOT NULL, title VARCHAR(180) NOT NULL,
+ body TEXT NOT NULL, link VARCHAR(255) NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(account_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_mail_outbox (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, recipient VARCHAR(190) NOT NULL, subject VARCHAR(200) NOT NULL,
+ body TEXT NOT NULL, attachment_lease_id BIGINT NULL, status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+ attempts INT NOT NULL DEFAULT 0, next_attempt DATETIME NULL, sent_at DATETIME NULL,
+ last_error VARCHAR(1000), created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(attachment_lease_id) REFERENCES nn_leases(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_settings (
+ setting_key VARCHAR(80) PRIMARY KEY, setting_value TEXT NOT NULL,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_favorites (
+ account_id BIGINT NOT NULL, unit_id BIGINT NOT NULL, PRIMARY KEY(account_id,unit_id),
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id), FOREIGN KEY(unit_id) REFERENCES nn_units(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_audit_log (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, actor_id BIGINT NULL, action VARCHAR(60) NOT NULL,
+ entity_type VARCHAR(40) NOT NULL, entity_id BIGINT NULL, details TEXT,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(actor_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS nn_reset_tokens (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, account_id BIGINT NOT NULL, token_hash VARCHAR(64) NOT NULL UNIQUE,
+ expires_at DATETIME NOT NULL, consumed_at DATETIME NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(account_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS nn_ticket_events (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, ticket_id BIGINT NOT NULL, actor_id BIGINT NOT NULL,
+ status VARCHAR(25) NOT NULL, body TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(ticket_id) REFERENCES nn_tickets(id), FOREIGN KEY(actor_id) REFERENCES nn_accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
